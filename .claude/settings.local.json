@@ -12,7 +12,21 @@
       "Bash(/opt/homebrew/bin/npm install *)",
       "Bash(/opt/homebrew/bin/npx playwright *)",
       "Bash(/opt/homebrew/bin/node -e ' *)",
-      "Edit(~/.claude/skills/satellite-demo/**)"
+      "Edit(~/.claude/skills/satellite-demo/**)",
+      "Bash(gcloud auth *)",
+      "Bash(/Users/myee/Documents/google-cloud-sdk/bin/gcloud auth *)",
+      "Bash(curl -s -X POST https://slides.googleapis.com/v1/presentations -H 'Authorization: Bearer __TRACKED_VAR__' -H 'Content-Type: application/json' -d '{\"title\": \"Rolling Content Views - Red Hat Satellite\"}')",
+      "Bash(/Users/myee/Documents/google-cloud-sdk/bin/gcloud projects *)",
+      "Bash(/Users/myee/Documents/google-cloud-sdk/bin/gcloud config *)",
+      "Bash(curl -s -X POST https://slides.googleapis.com/v1/presentations -H 'Authorization: Bearer __TRACKED_VAR__' -H 'Content-Type: application/json' -H 'x-goog-user-project: myee-gws' -d '{\"title\": \"Rolling Content Views - Red Hat Satellite\"}')",
+      "Bash(python3 build_slides.py)",
+      "Bash(curl -s 'https://www.googleapis.com/drive/v3/files/__TRACKED_VAR__?fields=webContentLink,thumbnailLink' -H 'Authorization: Bearer __TRACKED_VAR__' -H 'x-goog-user-project: myee-gws')",
+      "Bash(/Users/myee/Documents/google-cloud-sdk/bin/gsutil ls *)",
+      "Bash(/opt/homebrew/bin/gh repo *)",
+      "Bash(git remote *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)"
     ],
     "additionalDirectories": [
       "/Users/myee/.claude/skills"
