@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -sk -u admin:bc31c9a6-9ff0-11ec-9587-00155d1b0702 -X POST -H 'Content-Type: application/json' -d '{\"environment_ids\":[2]}' https://104.198.38.80/katello/api/v2/content_view_versions/3/promote)",
+      "Bash(python3 -c \"import json,sys;d=json.load\\(sys.stdin\\);print\\(f\\\\\"Task:{d.get\\('id',''\\)} State:{d.get\\('state',''\\)}\\\\\"\\)\")",
+      "Bash(curl -sk -u 'admin:bc31c9a6-9ff0-11ec-9587-00155d1b0702' \"https://104.198.38.80/foreman_tasks/api/tasks/322d9939-7a98-490c-94f4-ad2998c5882c\")",
+      "Bash(python3 -c \"import json,sys;d=json.load\\(sys.stdin\\);print\\(f\\\\\"State:{d.get\\('state',''\\)} Result:{d.get\\('result',''\\)}\\\\\"\\)\")",
+      "Bash(curl -sk -u admin:bc31c9a6-9ff0-11ec-9587-00155d1b0702 -X POST -H 'Content-Type: application/json' -d '{\"environment_ids\":[3]}' https://104.198.38.80/katello/api/v2/content_view_versions/3/promote)",
+      "Bash(python3 -c ' *)",
+      "Bash(npx playwright *)",
+      "Bash(/opt/homebrew/bin/npm init *)",
+      "Bash(/opt/homebrew/bin/npm install *)",
+      "Bash(/opt/homebrew/bin/npx playwright *)",
+      "Bash(/opt/homebrew/bin/node -e ' *)"
+    ]
+  }
+}

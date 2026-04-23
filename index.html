@@ -88,6 +88,11 @@ h1,h2,h3,h4{font-family:'Red Hat Display',sans-serif;font-weight:700;line-height
 .diagram{margin:28px 0;text-align:center;overflow-x:auto}
 .diagram svg{max-width:100%;height:auto}
 
+/* ---- SCREENSHOTS ---- */
+.screenshot{margin:24px 0;text-align:center}
+.screenshot img{max-width:100%;border-radius:8px;border:1px solid var(--g20);box-shadow:0 4px 20px rgba(0,0,0,.12)}
+.screenshot__cap{font-family:var(--ft);font-size:12px;color:var(--g50);margin-top:8px;font-style:italic}
+
 /* ---- TIMELINE ---- */
 .timeline{margin:24px 0;padding-left:20px;border-left:3px solid var(--g20)}
 .tl-item{position:relative;padding:0 0 20px 24px}
@@ -233,9 +238,9 @@ const STEPS=[
   <p style="color:var(--g50);margin-bottom:8px">A Content View is a curated, filterable collection of repository content. It controls which packages, errata, and modules are available to your hosts.</p>
   <div class="diagram">
     <svg viewBox="0 0 800 280" xmlns="http://www.w3.org/2000/svg">
-      ${svgBox(20,20,180,60,'RHEL 9 BaseOS','12,847 packages','#FFF','#0066CC','#151515')}
-      ${svgBox(20,100,180,60,'RHEL 9 AppStream','8,234 packages','#FFF','#0066CC','#151515')}
-      ${svgBox(20,180,180,60,'Satellite Client 6','42 packages','#FFF','#0066CC','#151515')}
+      ${svgBox(20,20,180,60,'RHEL 10 BaseOS','4,015 packages','#FFF','#0066CC','#151515')}
+      ${svgBox(20,100,180,60,'RHEL 10 AppStream','9,162 packages','#FFF','#0066CC','#151515')}
+      ${svgBox(20,180,180,60,'Satellite Client 6','10 packages','#FFF','#0066CC','#151515')}
       ${svgArrow(200,50,310,130,'#0066CC')}
       ${svgArrow(200,130,310,130,'#0066CC')}
       ${svgArrow(200,210,310,130,'#0066CC')}
@@ -247,6 +252,10 @@ const STEPS=[
       ${svgLabel(400,260,'Repositories are assembled into a Content View, then published as a frozen version.','#707070',12)}
     </svg>
   </div>
+  <div class="screenshot">
+    <img src="screenshots/content-views-list.png" alt="Content Views list in Red Hat Satellite showing RHEL10-Rolling-CV and RHEL10-Standard-CV">
+    <div class="screenshot__cap">Content Views list in Red Hat Satellite 6.19 — showing both a standard and rolling content view</div>
+  </div>
   <div class="callout--blue callout"><span style="font-size:18px;flex-shrink:0">&#128161;</span><div><strong>The question is: how does this versioned content reach your hosts?</strong> That is where the standard workflow and rolling content views diverge.</div></div>
 `;} },
 
@@ -257,10 +266,10 @@ const STEPS=[
   <div class="diagram">
     <svg viewBox="0 0 820 200" xmlns="http://www.w3.org/2000/svg">
       <text x="410" y="18" text-anchor="middle" font-family="Red Hat Display,sans-serif" font-weight="700" font-size="14" fill="#151515">Step 1: Create and publish</text>
-      ${svgBox(20,35,180,60,'Repositories','RHEL 9 BaseOS, AppStream','#FFF','#0066CC','#151515')}
+      ${svgBox(20,35,180,60,'Repositories','RHEL 10 BaseOS, AppStream','#FFF','#0066CC','#151515')}
       ${svgArrow(200,65,260,65,'#0066CC')}
       ${svgLabel(230,55,'Add','#0066CC')}
-      ${svgBox(260,35,200,60,'Content View','RHEL9-Standard-CV','#E7F1FA','#0066CC','#0066CC')}
+      ${svgBox(260,35,200,60,'Content View','RHEL10-Standard-CV','#E7F1FA','#0066CC','#0066CC')}
       ${svgArrow(460,65,520,65,'#707070')}
       ${svgLabel(490,55,'Publish','#707070')}
       ${svgBox(520,35,120,60,'Version 1.0','Snapshot','#F2F2F2','#383838','#383838')}
@@ -313,6 +322,10 @@ const STEPS=[
 
       <!-- spacer -->
     </svg>
+  </div>
+  <div class="screenshot">
+    <img src="screenshots/lifecycle-environments.png" alt="Lifecycle Environment Paths in Red Hat Satellite showing Library, Development, Testing, Production">
+    <div class="screenshot__cap">Lifecycle Environment Paths — Library &#8594; Development &#8594; Testing &#8594; Production</div>
   </div>
   <div class="callout"><span style="font-size:18px;flex-shrink:0">&#9200;</span><div><strong>Each promotion is a manual admin action</strong> followed by a validation period. Content cannot skip environments. Even dev servers wait at least a day, and require manual intervention.</div></div>
 `;} },
@@ -370,7 +383,7 @@ const STEPS=[
       ${svgLabel(410,70,'Add','#707070')}
 
       <!-- Content View -->
-      ${svgBox(440,40,160,80,'Content View','RHEL9-Standard-CV','#E7F1FA','#0066CC','#0066CC')}
+      ${svgBox(440,40,160,80,'Content View','RHEL10-Standard-CV','#E7F1FA','#0066CC','#0066CC')}
 
       <!-- Publish -->
       ${svgArrow(520,120,520,160,'#383838')}
@@ -405,6 +418,10 @@ const STEPS=[
       ${svgBox(700,340,110,45,'Prod Hosts','','#FFF','#E0E0E0','#707070')}
     </svg>
   </div>
+  <div class="screenshot">
+    <img src="screenshots/standard-cv-versions.png" alt="RHEL10-Standard-CV Versions tab showing Version 1.0 promoted to Library, Development, Testing, Production">
+    <div class="screenshot__cap">RHEL10-Standard-CV — Version 1.0 with 13,186 packages and 2,842 errata promoted across all environments</div>
+  </div>
   <div class="callout"><span style="font-size:18px;flex-shrink:0">&#128337;</span><div><strong>4 manual admin actions per content update</strong> (publish + 3 promotions). Each promotion requires validation time. Total cycle: ~2 weeks from sync to production.</div></div>
 `;} },
 
@@ -416,7 +433,7 @@ const STEPS=[
       <rect x="20" y="10" width="780" height="220" rx="8" fill="#FFF3EC" stroke="#F0561D" stroke-width="1.5"/>
       <text x="410" y="38" text-anchor="middle" font-family="Red Hat Display,sans-serif" font-weight="700" font-size="14" fill="#F0561D">Standard CV: repeat the entire cycle</text>
 
-      ${svgBox(40,55,110,40,'New errata','15 security','#FEF0F0','#EE0000','#A60000')}
+      ${svgBox(40,55,110,40,'New errata','345 security','#FEF0F0','#EE0000','#A60000')}
       ${svgArrow(150,75,190,75,'#707070')}
       ${svgBox(190,55,110,40,'Publish v6.0','~15 min','#F2F2F2','#383838','#383838')}
       ${svgArrow(300,75,340,75,'#707070')}
@@ -470,10 +487,10 @@ const STEPS=[
     <svg viewBox="0 0 820 260" xmlns="http://www.w3.org/2000/svg">
       <text x="410" y="20" text-anchor="middle" font-family="Red Hat Display,sans-serif" font-weight="900" font-size="15" fill="#151515">Rolling Content View: no publish, no promote</text>
 
-      ${svgBox(20,50,180,60,'Repositories','RHEL 9 BaseOS, AppStream','#FFF','#0066CC','#151515')}
+      ${svgBox(20,50,180,60,'Repositories','RHEL 10 BaseOS, AppStream','#FFF','#0066CC','#151515')}
       ${svgArrow(200,80,280,80,'#0066CC')}
       ${svgLabel(240,70,'Add','#0066CC')}
-      ${svgBox(280,40,220,80,'Rolling Content View','RHEL9-Rolling-CV','#E4F5E1','#63993D','#63993D')}
+      ${svgBox(280,40,220,80,'Rolling Content View','RHEL10-Rolling-CV','#E4F5E1','#63993D','#63993D')}
       <text x="390" y="135" text-anchor="middle" font-family="Red Hat Text,sans-serif" font-size="11" fill="#63993D">Always latest, no versions</text>
 
       ${svgArrow(500,80,580,80,'#63993D')}
@@ -490,6 +507,10 @@ const STEPS=[
       <text x="120" y="210" text-anchor="middle" font-family="Red Hat Display,sans-serif" font-weight="700" font-size="12" fill="#C7C7C7" text-decoration="line-through">Promote</text>
       <text x="120" y="240" text-anchor="middle" font-family="Red Hat Text,sans-serif" font-size="11" fill="#63993D">Not needed</text>
     </svg>
+  </div>
+  <div class="screenshot">
+    <img src="screenshots/rolling-cv-detail.png" alt="RHEL10-Rolling-CV detail showing repositories with real package and errata counts">
+    <div class="screenshot__cap">RHEL10-Rolling-CV — 3 repositories, no publish or promote buttons, content always current</div>
   </div>
   <div class="callout--green callout"><span style="font-size:18px;flex-shrink:0">&#9758;</span><div><strong>Rolling CVs live in Library only.</strong> They have no versions, no publish step, and no promotion cycle. When repositories sync, the rolling view automatically reflects the new content.</div></div>
 `;} },
@@ -511,7 +532,7 @@ const STEPS=[
       ${svgLabel(435,70,'Auto','#63993D')}
 
       <!-- Rolling CV -->
-      ${svgBox(470,40,210,80,'Rolling Content View','RHEL9-Rolling-CV','#E4F5E1','#63993D','#63993D')}
+      ${svgBox(470,40,210,80,'Rolling Content View','RHEL10-Rolling-CV','#E4F5E1','#63993D','#63993D')}
       <text x="575" y="135" text-anchor="middle" font-family="Red Hat Text,sans-serif" font-size="11" fill="#63993D">Automatically reflects latest sync</text>
 
       <!-- Direct to Library (no versions) -->
@@ -545,6 +566,10 @@ const STEPS=[
 { sec:'rolling', render(){return `
   <h2 style="margin-bottom:16px">Rolling Content View: when new errata arrive</h2>
   <p style="color:var(--g50);margin-bottom:16px">Same scenario: a critical CVE is published. Red Hat releases errata. Satellite syncs. Compare the two approaches:</p>
+  <div class="screenshot" style="margin-bottom:24px">
+    <img src="screenshots/errata-list.png" alt="Errata list in Red Hat Satellite showing security, bugfix, and enhancement advisories">
+    <div class="screenshot__cap">Errata list — 345 security, 2,466 bugfix, and 31 enhancement advisories synced from Red Hat CDN</div>
+  </div>
   <div class="diagram">
     <svg viewBox="0 0 820 320" xmlns="http://www.w3.org/2000/svg">
       <!-- Standard side -->
