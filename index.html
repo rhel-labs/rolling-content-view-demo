@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rolling Content Views - Red Hat Satellite</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;500;600;700;900&family=Red+Hat+Mono:wght@400;500;700&family=Red+Hat+Text:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;-webkit-font-smoothing:antialiased}
+body{overflow:hidden;height:100vh;font-family:'Red Hat Text',sans-serif;color:#151515;line-height:1.5;background:#F2F2F2}
+h1,h2,h3,h4{font-family:'Red Hat Display',sans-serif;font-weight:700;line-height:1.2}
+
+:root{
+  --red:#EE0000;--red-dark:#A60000;--red-light:#FCE3E3;--red-bg:#FEF0F0;
+  --white:#FFF;--g10:#F2F2F2;--g20:#E0E0E0;--g30:#C7C7C7;--g40:#A3A3A3;
+  --g50:#707070;--g60:#4D4D4D;--g70:#383838;--g80:#292929;--g95:#151515;
+  --blue:#0066CC;--blue-l:#E7F1FA;--green:#63993D;--green-l:#E4F5E1;
+  --orange:#F0561D;--orange-l:#FFF3EC;--teal:#37A3A3;--purple:#5E40BE;
+  --yellow:#FFCC17;--yellow-l:#FFF9E5;
+  --fd:'Red Hat Display',sans-serif;--ft:'Red Hat Text',sans-serif;--fm:'Red Hat Mono',monospace;
+}
+
+/* ---- LAYOUT ---- */
+.app{display:flex;flex-direction:column;height:100vh}
+.topbar{height:6px;background:var(--red);flex-shrink:0}
+.main{flex:1;overflow-y:auto;display:flex;justify-content:center;padding:40px 32px 100px}
+.slide-wrap{max-width:960px;width:100%;animation:fadeUp .35s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+
+/* ---- BOTTOM NAV ---- */
+.nav{position:fixed;bottom:0;left:0;right:0;height:60px;background:var(--white);border-top:1px solid var(--g20);display:flex;align-items:center;padding:0 24px;gap:16px;z-index:100}
+.nav__section{font-family:var(--fd);font-size:13px;font-weight:600;color:var(--red);min-width:120px;white-space:nowrap}
+.nav__mid{display:flex;align-items:center;gap:12px;flex:1;justify-content:center}
+.nav__btn{font-family:var(--ft);font-size:14px;font-weight:500;padding:8px 20px;border-radius:4px;cursor:pointer;border:1px solid var(--g30);background:var(--white);color:var(--g70);transition:all .15s;display:flex;align-items:center;gap:6px}
+.nav__btn:hover{border-color:var(--g50);background:var(--g10)}
+.nav__btn:disabled{opacity:.35;cursor:default}
+.nav__btn--go{background:var(--blue);color:var(--white);border-color:var(--blue)}
+.nav__btn--go:hover{background:#004D99}
+.nav__step{font-size:12px;color:var(--g50);font-family:var(--ft);min-width:90px;text-align:center}
+.nav__bar{width:160px;height:4px;background:var(--g20);border-radius:2px;overflow:hidden}
+.nav__fill{height:100%;background:var(--red);transition:width .3s;border-radius:2px}
+.nav__tabs{display:flex;gap:4px;margin-left:auto}
+.nav__tab{font-family:var(--ft);font-size:11px;padding:4px 10px;border-radius:12px;border:1px solid var(--g20);background:var(--white);color:var(--g50);cursor:pointer;white-space:nowrap;transition:all .15s}
+.nav__tab:hover{border-color:var(--g40)}
+.nav__tab.on{background:var(--red);color:var(--white);border-color:var(--red)}
+
+/* ---- SLIDE COMPONENTS ---- */
+.hero{text-align:center;padding:60px 0 40px}
+.hero__badge{display:inline-block;font-family:var(--ft);font-size:12px;font-weight:600;padding:4px 14px;border-radius:12px;background:var(--red);color:var(--white);margin-bottom:16px}
+.hero__title{font-family:var(--fd);font-size:2.6rem;font-weight:900;margin-bottom:10px}
+.hero__sub{font-size:1.15rem;color:var(--g50);max-width:640px;margin:0 auto}
+
+.card{background:var(--white);border:1px solid var(--g20);border-radius:8px;padding:24px;margin-bottom:16px}
+.card--red{border-left:4px solid var(--red)}
+.card--blue{border-left:4px solid var(--blue)}
+.card--green{border-left:4px solid var(--green)}
+.card--teal{border-left:4px solid var(--teal)}
+.card__t{font-family:var(--fd);font-size:1.1rem;font-weight:600;margin-bottom:8px}
+.card__b{font-size:14px;color:var(--g60);line-height:1.6}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+
+.tag{display:inline-flex;align-items:center;gap:4px;font-family:var(--ft);font-size:12px;font-weight:500;padding:3px 10px;border-radius:12px}
+.tag--red{background:var(--red-light);color:var(--red-dark)}
+.tag--blue{background:var(--blue-l);color:var(--blue)}
+.tag--green{background:var(--green-l);color:var(--green)}
+.tag--orange{background:var(--orange-l);color:var(--orange)}
+.tag--teal{background:var(--teal);color:var(--white)}
+
+.callout{background:var(--red-bg);border:1px solid var(--red-light);border-left:4px solid var(--red);border-radius:6px;padding:16px 20px;margin:20px 0;display:flex;align-items:flex-start;gap:12px;font-size:14px;color:var(--g70);line-height:1.6}
+.callout strong{color:var(--red-dark)}
+.callout--blue{background:var(--blue-l);border-color:#B8D4F0;border-left-color:var(--blue)}
+.callout--blue strong{color:var(--blue)}
+.callout--green{background:var(--green-l);border-color:#B8DEBB;border-left-color:var(--green)}
+.callout--green strong{color:var(--green)}
+
+.tbl{width:100%;border-collapse:collapse;font-size:14px}
+.tbl th{text-align:left;padding:12px 16px;font-family:var(--ft);font-weight:600;color:var(--g70);border-bottom:2px solid var(--g20);font-size:13px}
+.tbl td{padding:12px 16px;border-bottom:1px solid var(--g20);color:var(--g60)}
+.tbl .good{color:var(--green);font-weight:600}
+.tbl .warn{color:var(--orange);font-weight:600}
+
+/* ---- DIAGRAMS (SVG containers) ---- */
+.diagram{margin:28px 0;text-align:center;overflow-x:auto}
+.diagram svg{max-width:100%;height:auto}
+
+/* ---- TIMELINE ---- */
+.timeline{margin:24px 0;padding-left:20px;border-left:3px solid var(--g20)}
+.tl-item{position:relative;padding:0 0 20px 24px}
+.tl-item:last-child{padding-bottom:0}
+.tl-dot{position:absolute;left:-32px;top:2px;width:16px;height:16px;border-radius:50%;border:3px solid var(--g30);background:var(--white)}
+.tl-dot.on{border-color:var(--blue);background:var(--blue)}
+.tl-dot.ok{border-color:var(--green);background:var(--green)}
+.tl-dot.wr{border-color:var(--orange);background:var(--orange)}
+.tl-day{font-family:var(--fd);font-weight:700;font-size:13px;color:var(--g70);margin-bottom:2px}
+.tl-txt{font-size:14px;color:var(--g50)}
+
+/* ---- METRICS ---- */
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin:24px 0}
+.metric{text-align:center;padding:24px}
+.metric__v{font-family:var(--fd);font-size:2rem;font-weight:900;color:var(--red);margin-bottom:4px}
+.metric__l{font-size:13px;color:var(--g50)}
+
+/* ---- COMPARISON COLUMNS ---- */
+.vs{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin:24px 0}
+.vs-col{}
+.vs-hdr{font-family:var(--fd);font-weight:700;font-size:1rem;padding:12px 16px;border-radius:8px 8px 0 0;text-align:center}
+.vs-hdr--std{background:var(--orange-l);color:var(--orange)}
+.vs-hdr--roll{background:var(--green-l);color:var(--green)}
+.vs-body{background:var(--white);border:1px solid var(--g20);border-top:none;border-radius:0 0 8px 8px;padding:20px}
+
+/* ---- NUMBERED LIST ---- */
+.nlist{counter-reset:ns;margin:16px 0}
+.nlist__i{counter-increment:ns;display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid var(--g20)}
+.nlist__i::before{content:counter(ns);font-family:var(--fd);font-weight:700;font-size:13px;width:28px;height:28px;border-radius:50%;background:var(--g10);color:var(--g60);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
+.hint{margin-top:32px;font-size:13px;color:var(--g40);text-align:center}
+
+@media(max-width:800px){
+  .grid2,.vs{grid-template-columns:1fr}
+  .main{padding:24px 16px 100px}
+  .hero__title{font-size:1.8rem}
+  .nav__tabs{display:none}
+  .nav__section{display:none}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="topbar"></div>
+<div class="main" id="main">
+  <div class="slide-wrap" id="slide"></div>
+</div>
+<div class="nav">
+  <div class="nav__section" id="nav-sec"></div>
+  <div class="nav__mid">
+    <button class="nav__btn" id="prev">&#8592; Previous</button>
+    <div class="nav__step" id="step-txt"></div>
+    <div class="nav__bar"><div class="nav__fill" id="bar"></div></div>
+    <button class="nav__btn nav__btn--go" id="next">Next &#8594;</button>
+  </div>
+  <div class="nav__tabs" id="tabs"></div>
+</div>
+</div>
+<script>
+const SEC=[
+  {id:'intro',label:'Introduction',s:0},
+  {id:'standard',label:'Standard CV',s:3},
+  {id:'rolling',label:'Rolling CV',s:8},
+  {id:'compare',label:'Comparison',s:12},
+  {id:'summary',label:'Summary',s:15},
+];
+
+/* ============================================================
+   SVG DIAGRAM HELPERS
+   ============================================================ */
+function svgBox(x,y,w,h,label,sub,fill='#FFF',stroke='#E0E0E0',textColor='#151515'){
+  return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="8" fill="${fill}" stroke="${stroke}" stroke-width="2"/>
+  <text x="${x+w/2}" y="${y+h/2-(sub?6:0)}" text-anchor="middle" font-family="Red Hat Display,sans-serif" font-weight="700" font-size="13" fill="${textColor}">${label}</text>
+  ${sub?`<text x="${x+w/2}" y="${y+h/2+14}" text-anchor="middle" font-family="Red Hat Text,sans-serif" font-size="11" fill="${textColor}" opacity=".6">${sub}</text>`:''}`;
+}
+function svgArrow(x1,y1,x2,y2,color='#C7C7C7',dashed=false){
+  const dx=x2-x1,dy=y2-y1,len=Math.sqrt(dx*dx+dy*dy);
+  const ux=dx/len,uy=dy/len;
+  const ax=x2-ux*8,ay=y2-uy*8;
+  return `<line x1="${x1}" y1="${y1}" x2="${ax}" y2="${ay}" stroke="${color}" stroke-width="2" ${dashed?'stroke-dasharray="6 4"':''}/>
+  <polygon points="${x2},${y2} ${ax-uy*5},${ay+ux*5} ${ax+uy*5},${ay-ux*5}" fill="${color}"/>`;
+}
+function svgLabel(x,y,text,color='#707070',size=11){
+  return `<text x="${x}" y="${y}" text-anchor="middle" font-family="Red Hat Text,sans-serif" font-size="${size}" fill="${color}">${text}</text>`;
+}
+
+/* ============================================================
+   STEP DEFINITIONS
+   ============================================================ */
+const STEPS=[
+// ===== INTRO =====
+{ sec:'intro', render(){return `
+  <div class="hero">
+    <div class="hero__badge">Red Hat Satellite</div>
+    <h1 class="hero__title">Rolling Content Views</h1>
+    <p class="hero__sub">A faster path from sync to server for development and test environments</p>
+  </div>
+  <div class="grid3">
+    <div class="card" style="text-align:center;cursor:pointer" onclick="D.go(3)">
+      <div style="font-size:36px;margin-bottom:12px">&#128203;</div>
+      <div class="card__t">Standard CV first</div>
+      <div class="card__b">Learn the baseline workflow</div>
+    </div>
+    <div class="card" style="text-align:center;cursor:pointer" onclick="D.go(8)">
+      <div style="font-size:36px;margin-bottom:12px">&#9889;</div>
+      <div class="card__t">Jump to Rolling CVs</div>
+      <div class="card__b">Already know standard CVs?</div>
+    </div>
+    <div class="card" style="text-align:center;cursor:pointer;border-color:var(--blue)" onclick="D.next()">
+      <div style="font-size:36px;margin-bottom:12px">&#128640;</div>
+      <div class="card__t">Full guided tour</div>
+      <div class="card__b">Recommended</div>
+    </div>
+  </div>
+  <div class="hint">Use arrow keys or click Next to navigate. Press 1-5 to jump to sections.</div>
+`;} },
+
+{ sec:'intro', render(){return `
+  <h2 style="margin-bottom:8px">Content management at scale</h2>
+  <p style="color:var(--g50);margin-bottom:24px">Red Hat Satellite manages RHEL content across your fleet. But the traditional workflow introduces significant overhead for non-production environments.</p>
+  <div class="grid3">
+    <div class="card" style="text-align:center">
+      <div style="font-size:36px;margin-bottom:12px">&#128221;</div>
+      <div class="card__t">Manual publishing</div>
+      <div class="card__b">Every content update requires an admin to publish a new Content View version.</div>
+    </div>
+    <div class="card" style="text-align:center">
+      <div style="font-size:36px;margin-bottom:12px">&#128260;</div>
+      <div class="card__t">Promotion pipeline</div>
+      <div class="card__b">Each version must be promoted through Library, Dev, QA, and Production one at a time.</div>
+    </div>
+    <div class="card" style="text-align:center">
+      <div style="font-size:36px;margin-bottom:12px">&#9200;</div>
+      <div class="card__t">Time lag</div>
+      <div class="card__b">Security patches can take 2-4 weeks to reach even dev servers through the standard workflow.</div>
+    </div>
+  </div>
+  <div class="callout"><span style="font-size:18px;flex-shrink:0">&#128200;</span><div><strong>Business impact:</strong> Organizations managing 500+ hosts report spending 4-8 hours per week on content view management. For dev and test environments that simply need the latest content, this overhead delivers no value.</div></div>
+`;} },
+
+{ sec:'intro', render(){return `
+  <h2 style="margin-bottom:16px">What is a Content View?</h2>
+  <p style="color:var(--g50);margin-bottom:8px">A Content View is a curated, filterable collection of repository content. It controls which packages, errata, and modules are available to your hosts.</p>
+  <div class="diagram">
+    <svg viewBox="0 0 800 280" xmlns="http://www.w3.org/2000/svg">
+      ${svgBox(20,20,180,60,'RHEL 9 BaseOS','12,847 packages','#FFF','#0066CC','#151515')}
+      ${svgBox(20,100,180,60,'RHEL 9 AppStream','8,234 packages','#FFF','#0066CC','#151515')}
+      ${svgBox(20,180,180,60,'Satellite Client 6','42 packages','#FFF','#0066CC','#151515')}
+      ${svgArrow(200,50,310,130,'#0066CC')}
+      ${svgArrow(200,130,310,130,'#0066CC')}
+      ${svgArrow(200,210,310,130,'#0066CC')}
+      ${svgLabel(260,115,'Select','#0066CC')}
+      ${svgBox(310,80,220,100,'Content View','Curated snapshot','#E7F1FA','#0066CC','#0066CC')}
+      ${svgArrow(530,130,600,130,'#C7C7C7')}
+      ${svgLabel(565,120,'Publish','#707070')}
+      ${svgBox(600,80,180,100,'Version 1.0','Immutable snapshot','#F2F2F2','#E0E0E0','#4D4D4D')}
+      ${svgLabel(400,260,'Repositories are assembled into a Content View, then published as a frozen version.','#707070',12)}
+    </svg>
+  </div>
+  <div class="callout--blue callout"><span style="font-size:18px;flex-shrink:0">&#128161;</span><div><strong>The question is: how does this versioned content reach your hosts?</strong> That is where the standard workflow and rolling content views diverge.</div></div>
+`;} },
+
+// ===== STANDARD CV =====
+{ sec:'standard', render(){return `
+  <h2 style="margin-bottom:8px">Standard Content View: the publish and promote cycle</h2>
+  <p style="color:var(--g50);margin-bottom:16px">With a standard Content View, every content update follows a multi-step process: create, publish a version, then manually promote it through each lifecycle environment.</p>
+  <div class="diagram">
+    <svg viewBox="0 0 820 200" xmlns="http://www.w3.org/2000/svg">
+      <text x="410" y="18" text-anchor="middle" font-family="Red Hat Display,sans-serif" font-weight="700" font-size="14" fill="#151515">Step 1: Create and publish</text>
+      ${svgBox(20,35,180,60,'Repositories','RHEL 9 BaseOS, AppStream','#FFF','#0066CC','#151515')}
+      ${svgArrow(200,65,260,65,'#0066CC')}
+      ${svgLabel(230,55,'Add','#0066CC')}
+      ${svgBox(260,35,200,60,'Content View','RHEL9-Standard-CV','#E7F1FA','#0066CC','#0066CC')}
+      ${svgArrow(460,65,520,65,'#707070')}
+      ${svgLabel(490,55,'Publish','#707070')}
+      ${svgBox(520,35,120,60,'Version 1.0','Snapshot','#F2F2F2','#383838','#383838')}
+      ${svgArrow(640,65,680,65,'#63993D')}
+      ${svgBox(680,35,120,60,'Library','v1.0','#E4F5E1','#63993D','#63993D')}
+      <text x="410" y="135" text-anchor="middle" font-family="Red Hat Display,sans-serif" font-weight="700" font-size="13" fill="#707070">Publishing creates an immutable snapshot and places it in Library.</text>
+      <text x="410" y="155" text-anchor="middle" font-family="Red Hat Text,sans-serif" font-size="12" fill="#A3A3A3">No hosts can use this content until it is promoted to their environment.</text>
+      <rect x="20" y="170" width="780" height="3" rx="1" fill="#E0E0E0"/>
+      <text x="410" y="192" text-anchor="middle" font-family="Red Hat Mono,monospace" font-size="11" fill="#A3A3A3">Admin action required &#9888;</text>
+    </svg>
+  </div>
+  <div class="callout"><span style="font-size:18px;flex-shrink:0">&#128221;</span><div><strong>Publishing is a manual step.</strong> An administrator must explicitly trigger it each time repository content changes. Until published, new packages and errata remain unavailable to any Content View consumers.</div></div>
+`;} },
+
+{ sec:'standard', render(){return `
+  <h2 style="margin-bottom:8px">Standard Content View: promotion through lifecycle environments</h2>
+  <p style="color:var(--g50);margin-bottom:16px">After publishing, Version 1.0 exists only in Library. It must be manually promoted to each successive environment.</p>
+  <div class="diagram">
+    <svg viewBox="0 0 820 320" xmlns="http://www.w3.org/2000/svg">
+      ${svgBox(20,30,150,70,'Library','v1.0 &#10004;','#E4F5E1','#63993D','#63993D')}
+      ${svgArrow(170,65,230,65,'#0066CC')}
+      <text x="200" y="50" text-anchor="middle" font-family="Red Hat Text,sans-serif" font-size="10" fill="#0066CC">Promote</text>
+      ${svgBox(230,30,150,70,'Development','v1.0','#E7F1FA','#0066CC','#0066CC')}
+      ${svgArrow(380,65,440,65,'#0066CC')}
+      <text x="410" y="50" text-anchor="middle" font-family="Red Hat Text,sans-serif" font-size="10" fill="#0066CC">Promote</text>
+      ${svgBox(440,30,150,70,'Testing','v1.0','#E7F1FA','#0066CC','#0066CC')}
+      ${svgArrow(590,65,650,65,'#0066CC')}
+      <text x="620" y="50" text-anchor="middle" font-family="Red Hat Text,sans-serif" font-size="10" fill="#0066CC">Promote</text>
+      ${svgBox(650,30,150,70,'Production','v1.0','#E7F1FA','#0066CC','#0066CC')}
+
+      <line x1="20" y1="130" x2="800" y2="130" stroke="#E0E0E0" stroke-width="1"/>
+      <text x="410" y="152" text-anchor="middle" font-family="Red Hat Display,sans-serif" font-weight="700" font-size="13" fill="#151515">Timeline for a single publish-and-promote cycle</text>
+
+      <line x1="60" y1="175" x2="60" y2="290" stroke="#E0E0E0" stroke-width="2"/>
+      <circle cx="60" cy="185" r="7" fill="#63993D"/>
+      <text x="80" y="189" font-family="Red Hat Display,sans-serif" font-weight="700" font-size="12" fill="#383838">Day 0</text>
+      <text x="160" y="189" font-family="Red Hat Text,sans-serif" font-size="12" fill="#707070">Published to Library</text>
+
+      <circle cx="60" cy="215" r="7" fill="#0066CC"/>
+      <text x="80" y="219" font-family="Red Hat Display,sans-serif" font-weight="700" font-size="12" fill="#383838">Day 1</text>
+      <text x="160" y="219" font-family="Red Hat Text,sans-serif" font-size="12" fill="#707070">Admin promotes to Development (manual)</text>
+
+      <circle cx="60" cy="245" r="7" fill="#0066CC"/>
+      <text x="80" y="249" font-family="Red Hat Display,sans-serif" font-weight="700" font-size="12" fill="#383838">Day 5</text>
+      <text x="160" y="249" font-family="Red Hat Text,sans-serif" font-size="12" fill="#707070">Validated, promoted to Testing (manual)</text>
+
+      <circle cx="60" cy="275" r="7" fill="#0066CC"/>
+      <text x="80" y="279" font-family="Red Hat Display,sans-serif" font-weight="700" font-size="12" fill="#383838">Day 14</text>
+      <text x="160" y="279" font-family="Red Hat Text,sans-serif" font-size="12" fill="#707070">Validated, promoted to Production (manual)</text>
+
+      <!-- spacer -->
+    </svg>
+  </div>
+  <div class="callout"><span style="font-size:18px;flex-shrink:0">&#9200;</span><div><strong>Each promotion is a manual admin action</strong> followed by a validation period. Content cannot skip environments. Even dev servers wait at least a day, and require manual intervention.</div></div>
+`;} },
+
+{ sec:'standard', render(){return `
+  <h2 style="margin-bottom:8px">Standard Content View: the version accumulation problem</h2>
+  <p style="color:var(--g50);margin-bottom:16px">Over time, the Content View accumulates versions. Each repository sync with new errata triggers the same multi-step cycle.</p>
+  <div class="diagram">
+    <svg viewBox="0 0 820 300" xmlns="http://www.w3.org/2000/svg">
+      <text x="410" y="20" text-anchor="middle" font-family="Red Hat Display,sans-serif" font-weight="700" font-size="14" fill="#151515">Content View version history</text>
+
+      ${svgBox(20,40,120,50,'Version 1.0','Jan 15','#F2F2F2','#E0E0E0','#707070')}
+      ${svgBox(160,40,120,50,'Version 2.0','Feb 3','#F2F2F2','#E0E0E0','#707070')}
+      ${svgBox(300,40,120,50,'Version 3.0','Feb 20','#F2F2F2','#E0E0E0','#707070')}
+      ${svgBox(440,40,120,50,'Version 4.0','Mar 8','#F2F2F2','#E0E0E0','#707070')}
+      ${svgBox(580,40,120,50,'Version 5.0','Mar 22','#E7F1FA','#0066CC','#0066CC')}
+      <text x="720" y="70" font-family="Red Hat Text,sans-serif" font-size="14" fill="#A3A3A3">...</text>
+
+      <text x="80" y="110" text-anchor="middle" font-family="Red Hat Text,sans-serif" font-size="11" fill="#A3A3A3">Published</text>
+      <text x="80" y="122" text-anchor="middle" font-family="Red Hat Text,sans-serif" font-size="11" fill="#A3A3A3">Promoted x3</text>
+      <text x="220" y="110" text-anchor="middle" font-family="Red Hat Text,sans-serif" font-size="11" fill="#A3A3A3">Published</text>
+      <text x="220" y="122" text-anchor="middle" font-family="Red Hat Text,sans-serif" font-size="11" fill="#A3A3A3">Promoted x3</text>
+      <text x="360" y="110" text-anchor="middle" font-family="Red Hat Text,sans-serif" font-size="11" fill="#A3A3A3">Published</text>
+      <text x="360" y="122" text-anchor="middle" font-family="Red Hat Text,sans-serif" font-size="11" fill="#A3A3A3">Promoted x3</text>
+      <text x="500" y="110" text-anchor="middle" font-family="Red Hat Text,sans-serif" font-size="11" fill="#A3A3A3">Published</text>
+      <text x="500" y="122" text-anchor="middle" font-family="Red Hat Text,sans-serif" font-size="11" fill="#A3A3A3">Promoted x3</text>
+      <text x="640" y="110" text-anchor="middle" font-family="Red Hat Text,sans-serif" font-size="11" fill="#0066CC">Latest</text>
+
+      <rect x="20" y="145" width="780" height="3" rx="1" fill="#E0E0E0"/>
+      <text x="410" y="175" text-anchor="middle" font-family="Red Hat Display,sans-serif" font-weight="700" font-size="14" fill="#F0561D">Every version requires the same manual cycle</text>
+
+      <rect x="80" y="195" width="660" height="85" rx="8" fill="#FFF3EC" stroke="#F0561D" stroke-width="1.5"/>
+      <text x="100" y="220" font-family="Red Hat Text,sans-serif" font-weight="600" font-size="13" fill="#F0561D">For each new version you must:</text>
+      <text x="120" y="242" font-family="Red Hat Text,sans-serif" font-size="12" fill="#4D4D4D">1. Publish new version &nbsp;&nbsp; 2. Promote to Dev &nbsp;&nbsp; 3. Validate</text>
+      <text x="120" y="262" font-family="Red Hat Text,sans-serif" font-size="12" fill="#4D4D4D">4. Promote to Testing &nbsp;&nbsp; 5. Validate &nbsp;&nbsp; 6. Promote to Production</text>
+    </svg>
+  </div>
+  <div class="callout"><span style="font-size:18px;flex-shrink:0">&#128161;</span><div><strong>For production, this control is essential.</strong> But for dev and test environments that simply want the latest content, 6 manual steps per update is pure overhead. What if there was a better way?</div></div>
+`;} },
+
+{ sec:'standard', render(){return `
+  <h2 style="margin-bottom:16px">Standard Content View: full workflow diagram</h2>
+  <div class="diagram">
+    <svg viewBox="0 0 820 400" xmlns="http://www.w3.org/2000/svg">
+      <text x="410" y="20" text-anchor="middle" font-family="Red Hat Display,sans-serif" font-weight="900" font-size="15" fill="#151515">Standard Content View publishing workflow</text>
+
+      <!-- CDN -->
+      ${svgBox(20,50,140,60,'Red Hat CDN','Packages &amp; errata','#FEF0F0','#EE0000','#A60000')}
+      ${svgArrow(160,80,220,80,'#EE0000')}
+      ${svgLabel(190,70,'Sync','#A60000')}
+
+      <!-- Satellite Repos -->
+      ${svgBox(220,50,160,60,'Satellite Repos','Synced content','#FFF','#E0E0E0','#151515')}
+      ${svgArrow(380,80,440,80,'#707070')}
+      ${svgLabel(410,70,'Add','#707070')}
+
+      <!-- Content View -->
+      ${svgBox(440,40,160,80,'Content View','RHEL9-Standard-CV','#E7F1FA','#0066CC','#0066CC')}
+
+      <!-- Publish -->
+      ${svgArrow(520,120,520,160,'#383838')}
+      ${svgLabel(548,145,'Publish','#383838')}
+      <text x="570" y="155" font-family="Red Hat Text,sans-serif" font-size="10" fill="#F0561D">&#9888; Manual</text>
+
+      <!-- Version -->
+      ${svgBox(440,160,160,50,'Version N.0','Immutable snapshot','#F2F2F2','#383838','#383838')}
+
+      <!-- Promote chain -->
+      ${svgArrow(520,210,520,245,'#63993D')}
+      ${svgBox(80,245,140,55,'Library','v N.0','#E4F5E1','#63993D','#63993D')}
+
+      ${svgArrow(220,272,290,272,'#0066CC')}
+      <text x="255" y="262" font-family="Red Hat Text,sans-serif" font-size="9" fill="#F0561D">Manual</text>
+      ${svgBox(290,245,140,55,'Development','v N.0','#E7F1FA','#0066CC','#0066CC')}
+
+      ${svgArrow(430,272,500,272,'#0066CC')}
+      <text x="465" y="262" font-family="Red Hat Text,sans-serif" font-size="9" fill="#F0561D">Manual</text>
+      ${svgBox(500,245,140,55,'Testing','v N.0','#E7F1FA','#0066CC','#0066CC')}
+
+      ${svgArrow(640,272,710,272,'#0066CC')}
+      <text x="675" y="262" font-family="Red Hat Text,sans-serif" font-size="9" fill="#F0561D">Manual</text>
+      ${svgBox(710,245,90,55,'Production','v N.0','#E7F1FA','#0066CC','#0066CC')}
+
+      <!-- Hosts -->
+      ${svgArrow(305,300,305,340,'#707070',true)}
+      ${svgArrow(515,300,515,340,'#707070',true)}
+      ${svgArrow(755,300,755,340,'#707070',true)}
+      ${svgBox(240,340,130,45,'Dev Hosts','','#FFF','#E0E0E0','#707070')}
+      ${svgBox(450,340,130,45,'QA Hosts','','#FFF','#E0E0E0','#707070')}
+      ${svgBox(700,340,110,45,'Prod Hosts','','#FFF','#E0E0E0','#707070')}
+    </svg>
+  </div>
+  <div class="callout"><span style="font-size:18px;flex-shrink:0">&#128337;</span><div><strong>4 manual admin actions per content update</strong> (publish + 3 promotions). Each promotion requires validation time. Total cycle: ~2 weeks from sync to production.</div></div>
+`;} },
+
+{ sec:'standard', render(){return `
+  <h2 style="margin-bottom:16px">Standard Content View: when new errata arrive</h2>
+  <p style="color:var(--g50);margin-bottom:16px">A critical CVE is published. Red Hat releases errata. Satellite syncs the repository. Now what?</p>
+  <div class="diagram">
+    <svg viewBox="0 0 820 240" xmlns="http://www.w3.org/2000/svg">
+      <rect x="20" y="10" width="780" height="220" rx="8" fill="#FFF3EC" stroke="#F0561D" stroke-width="1.5"/>
+      <text x="410" y="38" text-anchor="middle" font-family="Red Hat Display,sans-serif" font-weight="700" font-size="14" fill="#F0561D">Standard CV: repeat the entire cycle</text>
+
+      ${svgBox(40,55,110,40,'New errata','15 security','#FEF0F0','#EE0000','#A60000')}
+      ${svgArrow(150,75,190,75,'#707070')}
+      ${svgBox(190,55,110,40,'Publish v6.0','~15 min','#F2F2F2','#383838','#383838')}
+      ${svgArrow(300,75,340,75,'#707070')}
+      ${svgBox(340,55,120,40,'Promote Dev','~5 min','#E7F1FA','#0066CC','#0066CC')}
+      ${svgArrow(460,75,500,75,'#707070')}
+      ${svgBox(500,55,100,40,'Validate','1-3 days','#FFF','#E0E0E0','#707070')}
+      ${svgArrow(600,75,640,75,'#707070')}
+      ${svgBox(640,55,140,40,'Promote Test','~5 min','#E7F1FA','#0066CC','#0066CC')}
+
+      ${svgArrow(710,95,710,120,'#707070')}
+      ${svgBox(590,120,140,40,'Validate QA','3-7 days','#FFF','#E0E0E0','#707070')}
+      ${svgArrow(590,140,520,140,'#707070')}
+      ${svgBox(350,120,170,40,'Promote Production','~5 min','#E7F1FA','#0066CC','#0066CC')}
+
+      <text x="410" y="195" text-anchor="middle" font-family="Red Hat Display,sans-serif" font-weight="900" font-size="20" fill="#F0561D">~14 days &nbsp; | &nbsp; 30+ minutes admin time</text>
+      <text x="410" y="215" text-anchor="middle" font-family="Red Hat Text,sans-serif" font-size="12" fill="#707070">Dev servers patched on Day 1 (with manual work). Production on Day 14.</text>
+    </svg>
+  </div>
+`;} },
+
+// ===== ROLLING CV =====
+{ sec:'rolling', render(){return `
+  <div class="hero">
+    <div class="hero__badge" style="background:var(--teal)">New in Satellite 6.18</div>
+    <h1 class="hero__title">Rolling Content Views</h1>
+    <p class="hero__sub">Automatically provides the latest synchronized content without publishing or promotion.</p>
+  </div>
+  <div class="grid3">
+    <div class="card card--green" style="text-align:center">
+      <div style="font-size:36px;margin-bottom:12px">&#9889;</div>
+      <div class="card__t">No publishing</div>
+      <div class="card__b">Content is available the moment repositories sync. No manual publish step.</div>
+    </div>
+    <div class="card card--green" style="text-align:center">
+      <div style="font-size:36px;margin-bottom:12px">&#10003;</div>
+      <div class="card__t">No promotion</div>
+      <div class="card__b">Eliminate the manual promote-through-environments cycle entirely.</div>
+    </div>
+    <div class="card card--green" style="text-align:center">
+      <div style="font-size:36px;margin-bottom:12px">&#128260;</div>
+      <div class="card__t">Always current</div>
+      <div class="card__b">Hosts always see the latest content. Auto-updated on every repository sync.</div>
+    </div>
+  </div>
+`;} },
+
+{ sec:'rolling', render(){return `
+  <h2 style="margin-bottom:16px">Rolling Content View: the publishing process</h2>
+  <p style="color:var(--g50);margin-bottom:8px">A Rolling Content View is created with a single flag. It does not create versions. It does not require publishing or promotion. It always reflects the latest synced content.</p>
+  <div class="diagram">
+    <svg viewBox="0 0 820 260" xmlns="http://www.w3.org/2000/svg">
+      <text x="410" y="20" text-anchor="middle" font-family="Red Hat Display,sans-serif" font-weight="900" font-size="15" fill="#151515">Rolling Content View: no publish, no promote</text>
+
+      ${svgBox(20,50,180,60,'Repositories','RHEL 9 BaseOS, AppStream','#FFF','#0066CC','#151515')}
+      ${svgArrow(200,80,280,80,'#0066CC')}
+      ${svgLabel(240,70,'Add','#0066CC')}
+      ${svgBox(280,40,220,80,'Rolling Content View','RHEL9-Rolling-CV','#E4F5E1','#63993D','#63993D')}
+      <text x="390" y="135" text-anchor="middle" font-family="Red Hat Text,sans-serif" font-size="11" fill="#63993D">Always latest, no versions</text>
+
+      ${svgArrow(500,80,580,80,'#63993D')}
+      ${svgLabel(540,70,'Auto','#63993D')}
+
+      ${svgBox(580,50,200,60,'Library','Always current','#E4F5E1','#63993D','#63993D')}
+
+      ${svgArrow(680,110,680,155,'#63993D',true)}
+
+      ${svgBox(580,155,200,50,'Dev &amp; Test Hosts','Receive latest content','#FFF','#63993D','#383838')}
+
+      <rect x="40" y="170" width="160" height="60" rx="6" fill="#FFF" stroke="#E0E0E0" stroke-width="1.5"/>
+      <text x="120" y="188" text-anchor="middle" font-family="Red Hat Display,sans-serif" font-weight="700" font-size="12" fill="#C7C7C7" text-decoration="line-through">Publish</text>
+      <text x="120" y="210" text-anchor="middle" font-family="Red Hat Display,sans-serif" font-weight="700" font-size="12" fill="#C7C7C7" text-decoration="line-through">Promote</text>
+      <text x="120" y="240" text-anchor="middle" font-family="Red Hat Text,sans-serif" font-size="11" fill="#63993D">Not needed</text>
+    </svg>
+  </div>
+  <div class="callout--green callout"><span style="font-size:18px;flex-shrink:0">&#9758;</span><div><strong>Rolling CVs live in Library only.</strong> They have no versions, no publish step, and no promotion cycle. When repositories sync, the rolling view automatically reflects the new content.</div></div>
+`;} },
+
+{ sec:'rolling', render(){return `
+  <h2 style="margin-bottom:16px">Rolling Content View: full workflow diagram</h2>
+  <div class="diagram">
+    <svg viewBox="0 0 820 310" xmlns="http://www.w3.org/2000/svg">
+      <text x="410" y="20" text-anchor="middle" font-family="Red Hat Display,sans-serif" font-weight="900" font-size="15" fill="#151515">Rolling Content View workflow</text>
+
+      <!-- CDN -->
+      ${svgBox(20,50,140,60,'Red Hat CDN','Packages &amp; errata','#FEF0F0','#EE0000','#A60000')}
+      ${svgArrow(160,80,240,80,'#EE0000')}
+      ${svgLabel(200,70,'Sync','#A60000')}
+
+      <!-- Satellite Repos -->
+      ${svgBox(240,50,160,60,'Satellite Repos','Synced content','#FFF','#E0E0E0','#151515')}
+      ${svgArrow(400,80,470,80,'#63993D')}
+      ${svgLabel(435,70,'Auto','#63993D')}
+
+      <!-- Rolling CV -->
+      ${svgBox(470,40,210,80,'Rolling Content View','RHEL9-Rolling-CV','#E4F5E1','#63993D','#63993D')}
+      <text x="575" y="135" text-anchor="middle" font-family="Red Hat Text,sans-serif" font-size="11" fill="#63993D">Automatically reflects latest sync</text>
+
+      <!-- Direct to Library (no versions) -->
+      ${svgArrow(575,120,575,170,'#63993D')}
+      ${svgBox(470,170,210,55,'Library','Always latest content','#E4F5E1','#63993D','#63993D')}
+
+      <!-- Hosts -->
+      ${svgArrow(575,225,575,260,'#63993D',true)}
+      ${svgBox(470,260,210,40,'Dev &amp; Test Hosts','','#FFF','#63993D','#383838')}
+
+      <!-- "What's missing" callout -->
+      <rect x="20" y="155" width="370" height="140" rx="8" fill="#E4F5E1" stroke="#63993D" stroke-width="1.5"/>
+      <text x="205" y="180" text-anchor="middle" font-family="Red Hat Display,sans-serif" font-weight="700" font-size="14" fill="#63993D">Steps eliminated</text>
+      <text x="50" y="205" font-family="Red Hat Text,sans-serif" font-size="13" fill="#4D4D4D" text-decoration="line-through">Publish new version</text>
+      <text x="240" y="205" font-family="Red Hat Text,sans-serif" font-size="13" fill="#63993D">&#10003; Automatic</text>
+      <text x="50" y="228" font-family="Red Hat Text,sans-serif" font-size="13" fill="#4D4D4D" text-decoration="line-through">Promote to Development</text>
+      <text x="280" y="228" font-family="Red Hat Text,sans-serif" font-size="13" fill="#63993D">&#10003; Not needed</text>
+      <text x="50" y="251" font-family="Red Hat Text,sans-serif" font-size="13" fill="#4D4D4D" text-decoration="line-through">Promote to Testing</text>
+      <text x="260" y="251" font-family="Red Hat Text,sans-serif" font-size="13" fill="#63993D">&#10003; Not needed</text>
+      <text x="50" y="274" font-family="Red Hat Text,sans-serif" font-size="13" fill="#4D4D4D" text-decoration="line-through">Promote to Production</text>
+      <text x="275" y="274" font-family="Red Hat Text,sans-serif" font-size="13" fill="#63993D">&#10003; Not needed</text>
+    </svg>
+  </div>
+  <div class="metrics">
+    <div class="card metric"><div class="metric__v" style="color:var(--green)">0</div><div class="metric__l">Manual steps</div></div>
+    <div class="card metric"><div class="metric__v" style="color:var(--green)">0 min</div><div class="metric__l">Admin time per update</div></div>
+    <div class="card metric"><div class="metric__v" style="color:var(--blue)">Instant</div><div class="metric__l">Time to availability</div></div>
+  </div>
+`;} },
+
+{ sec:'rolling', render(){return `
+  <h2 style="margin-bottom:16px">Rolling Content View: when new errata arrive</h2>
+  <p style="color:var(--g50);margin-bottom:16px">Same scenario: a critical CVE is published. Red Hat releases errata. Satellite syncs. Compare the two approaches:</p>
+  <div class="diagram">
+    <svg viewBox="0 0 820 320" xmlns="http://www.w3.org/2000/svg">
+      <!-- Standard side -->
+      <rect x="10" y="10" width="390" height="300" rx="8" fill="#FFF3EC" stroke="#F0561D" stroke-width="1.5"/>
+      <text x="205" y="35" text-anchor="middle" font-family="Red Hat Display,sans-serif" font-weight="700" font-size="13" fill="#F0561D">Standard Content View</text>
+      ${svgBox(30,50,100,35,'Errata synced','','#FEF0F0','#EE0000','#A60000')}
+      ${svgArrow(130,67,160,67,'#707070')}
+      ${svgBox(160,50,80,35,'Publish','Manual','#F2F2F2','#383838','#383838')}
+      ${svgArrow(240,67,270,67,'#707070')}
+      ${svgBox(270,50,110,35,'Promote Dev','Manual','#E7F1FA','#0066CC','#0066CC')}
+      ${svgArrow(325,85,325,105,'#707070')}
+      ${svgBox(260,105,120,35,'Validate','1-3 days','#FFF','#E0E0E0','#707070')}
+      ${svgArrow(325,140,325,155,'#707070')}
+      ${svgBox(255,155,130,35,'Promote Test','Manual','#E7F1FA','#0066CC','#0066CC')}
+      ${svgArrow(325,190,325,205,'#707070')}
+      ${svgBox(260,205,120,35,'Validate QA','3-7 days','#FFF','#E0E0E0','#707070')}
+      ${svgArrow(325,240,325,255,'#707070')}
+      ${svgBox(250,255,140,35,'Promote Prod','Manual','#E7F1FA','#0066CC','#0066CC')}
+      <text x="120" y="280" font-family="Red Hat Display,sans-serif" font-weight="900" font-size="16" fill="#F0561D">~14 days</text>
+
+      <!-- Rolling side -->
+      <rect x="420" y="10" width="390" height="300" rx="8" fill="#E4F5E1" stroke="#63993D" stroke-width="1.5"/>
+      <text x="615" y="35" text-anchor="middle" font-family="Red Hat Display,sans-serif" font-weight="700" font-size="13" fill="#63993D">Rolling Content View</text>
+      ${svgBox(440,50,100,35,'Errata synced','','#FEF0F0','#EE0000','#A60000')}
+      ${svgArrow(540,67,580,67,'#63993D')}
+      ${svgBox(580,50,210,55,'Rolling CV auto-updates','Content immediately available','#E4F5E1','#63993D','#63993D')}
+      ${svgArrow(685,105,685,140,'#63993D',true)}
+      ${svgBox(580,140,210,50,'Dev &amp; Test Hosts','Patched at next check-in','#FFF','#63993D','#383838')}
+
+      <text x="685" y="230" text-anchor="middle" font-family="Red Hat Display,sans-serif" font-weight="700" font-size="20" fill="#63993D">&#10003;</text>
+      <text x="615" y="260" font-family="Red Hat Display,sans-serif" font-weight="900" font-size="22" fill="#63993D">Day 0</text>
+      <text x="615" y="285" font-family="Red Hat Text,sans-serif" font-size="13" fill="#4D4D4D">Zero admin time</text>
+    </svg>
+  </div>
+`;} },
+
+// ===== COMPARISON =====
+{ sec:'compare', render(){return `
+  <h2 style="margin-bottom:16px">Feature comparison</h2>
+  <div class="card" style="overflow-x:auto">
+    <table class="tbl">
+      <thead><tr><th>Feature</th><th>Standard Content View</th><th>Rolling Content View</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Content updates</strong></td><td>Manual publish required</td><td class="good">Auto-updated on sync</td></tr>
+        <tr><td><strong>Versioning</strong></td><td class="good">Explicit (v1.0, v1.1 ...)</td><td>No versions, always latest</td></tr>
+        <tr><td><strong>Publishing</strong></td><td>Required for every update</td><td class="good">Not needed</td></tr>
+        <tr><td><strong>Promotion</strong></td><td>Must promote through environments</td><td class="good">Library only, no promotion</td></tr>
+        <tr><td><strong>Rollback</strong></td><td class="good">Yes, promote previous version</td><td>No version history</td></tr>
+        <tr><td><strong>Content filters</strong></td><td class="good">Yes</td><td class="good">Yes</td></tr>
+        <tr><td><strong>Composite CV support</strong></td><td class="good">Yes</td><td class="warn">Not yet (planned)</td></tr>
+        <tr><td><strong>Lifecycle environments</strong></td><td class="good">All environments</td><td>Library only</td></tr>
+        <tr><td><strong>Admin overhead</strong></td><td class="warn">High (publish + promote)</td><td class="good">None</td></tr>
+        <tr><td><strong>Best for</strong></td><td><span class="tag tag--blue">Production</span></td><td><span class="tag tag--green">Dev / Test</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="callout--blue callout"><span style="font-size:18px;flex-shrink:0">&#128161;</span><div><strong>Neither approach is universally better.</strong> They serve different needs. The key insight: you can use both.</div></div>
+`;} },
+
+{ sec:'compare', render(){return `
+  <h2 style="margin-bottom:16px">CVE response: side-by-side timeline</h2>
+  <div class="grid2">
+    <div>
+      <h3 style="color:var(--orange);margin-bottom:12px">Standard CV only</h3>
+      <div class="timeline">
+        <div class="tl-item"><div class="tl-dot wr"></div><div class="tl-day">Day 0</div><div class="tl-txt">CVE published, Satellite syncs errata</div></div>
+        <div class="tl-item"><div class="tl-dot"></div><div class="tl-day">Day 1</div><div class="tl-txt">Admin publishes new CV version (manual)</div></div>
+        <div class="tl-item"><div class="tl-dot"></div><div class="tl-day">Day 1</div><div class="tl-txt">Promote to Dev, dev patched</div></div>
+        <div class="tl-item"><div class="tl-dot"></div><div class="tl-day">Day 5</div><div class="tl-txt">Promote to QA</div></div>
+        <div class="tl-item"><div class="tl-dot"></div><div class="tl-day">Day 7+</div><div class="tl-txt">Promote to Prod, prod patched</div></div>
+      </div>
+      <p style="text-align:center;margin-top:12px;font-size:14px"><strong style="color:var(--orange)">Dev patched: Day 1</strong> (with manual work)</p>
+    </div>
+    <div>
+      <h3 style="color:var(--green);margin-bottom:12px">Hybrid: Rolling + Standard</h3>
+      <div class="timeline">
+        <div class="tl-item"><div class="tl-dot ok"></div><div class="tl-day">Day 0</div><div class="tl-txt">CVE published, Satellite syncs errata</div></div>
+        <div class="tl-item"><div class="tl-dot ok"></div><div class="tl-day">Day 0</div><div class="tl-txt" style="color:var(--green);font-weight:600">Rolling CV auto-updates, dev and test patched</div></div>
+        <div class="tl-item"><div class="tl-dot"></div><div class="tl-day">Day 1</div><div class="tl-txt">Admin publishes standard CV for prod</div></div>
+        <div class="tl-item"><div class="tl-dot"></div><div class="tl-day">Day 5</div><div class="tl-txt">Promote through QA to Production</div></div>
+        <div class="tl-item"><div class="tl-dot ok"></div><div class="tl-day">Day 7+</div><div class="tl-txt">Prod patched via controlled rollout</div></div>
+      </div>
+      <p style="text-align:center;margin-top:12px;font-size:14px"><strong style="color:var(--green)">Dev patched: Day 0</strong> (zero manual work)</p>
+    </div>
+  </div>
+  <div class="callout--green callout"><span style="font-size:18px;flex-shrink:0">&#128737;</span><div><strong>Security patches reach dev and test the same day</strong> with zero admin effort. Production still uses the controlled standard workflow.</div></div>
+`;} },
+
+{ sec:'compare', render(){return `
+  <h2 style="margin-bottom:16px">The hybrid approach</h2>
+  <p style="color:var(--g50);margin-bottom:16px">Use the right tool for each environment. Combine Rolling and Standard Content Views.</p>
+  <div class="diagram">
+    <svg viewBox="0 0 820 340" xmlns="http://www.w3.org/2000/svg">
+      <text x="410" y="20" text-anchor="middle" font-family="Red Hat Display,sans-serif" font-weight="900" font-size="15" fill="#151515">Recommended: hybrid architecture</text>
+
+      <!-- CDN -->
+      ${svgBox(20,60,140,60,'Red Hat CDN','Packages &amp; errata','#FEF0F0','#EE0000','#A60000')}
+      ${svgArrow(160,90,240,90,'#EE0000')}
+      ${svgBox(240,60,160,60,'Satellite Repos','Synced content','#FFF','#E0E0E0','#151515')}
+
+      <!-- Split -->
+      ${svgArrow(400,75,480,55,'#63993D')}
+      ${svgArrow(400,105,480,175,'#0066CC')}
+
+      <!-- Rolling lane -->
+      <rect x="470" y="25" width="340" height="100" rx="8" fill="#E4F5E1" stroke="#63993D" stroke-width="1.5" stroke-dasharray="0"/>
+      <text x="490" y="48" font-family="Red Hat Display,sans-serif" font-weight="700" font-size="12" fill="#63993D">Dev &amp; Test lane</text>
+      ${svgBox(490,55,150,50,'Rolling CV','Auto-updated','#E4F5E1','#63993D','#63993D')}
+      ${svgArrow(640,80,690,80,'#63993D')}
+      ${svgBox(690,60,100,40,'Dev Hosts','','#FFF','#63993D','#383838')}
+      <text x="740" y="115" text-anchor="middle" font-family="Red Hat Text,sans-serif" font-size="10" fill="#63993D">&#10003; Zero overhead</text>
+
+      <!-- Standard lane -->
+      <rect x="470" y="145" width="340" height="180" rx="8" fill="#E7F1FA" stroke="#0066CC" stroke-width="1.5"/>
+      <text x="490" y="168" font-family="Red Hat Display,sans-serif" font-weight="700" font-size="12" fill="#0066CC">Production lane</text>
+      ${svgBox(490,175,120,45,'Standard CV','Publish v N.0','#E7F1FA','#0066CC','#0066CC')}
+      ${svgArrow(610,197,640,197,'#0066CC')}
+      ${svgBox(640,180,60,35,'Dev','v N','#E7F1FA','#0066CC','#0066CC')}
+      ${svgArrow(700,197,720,197,'#0066CC')}
+      ${svgBox(720,180,60,35,'QA','v N','#E7F1FA','#0066CC','#0066CC')}
+      ${svgArrow(750,215,750,240,'#0066CC')}
+      ${svgBox(700,240,80,40,'Prod','v N','#E7F1FA','#0066CC','#0066CC')}
+      ${svgArrow(700,280,700,300,'#0066CC',true)}
+      ${svgBox(650,300,100,20,'Prod Hosts','','#FFF','#0066CC','#383838')}
+      <text x="555" y="275" font-family="Red Hat Text,sans-serif" font-size="10" fill="#0066CC">&#128274; Versioned, staged</text>
+    </svg>
+  </div>
+  <div class="grid3">
+    <div class="card card--green"><div class="card__t">Development</div><div class="card__b">Use <strong>Rolling CV</strong>. Always latest. Zero overhead.</div></div>
+    <div class="card card--teal"><div class="card__t">Test / QA</div><div class="card__b">Use <strong>Rolling CV</strong> for latest, or <strong>Standard CV</strong> for reproducible environments.</div></div>
+    <div class="card card--blue"><div class="card__t">Production</div><div class="card__b">Use <strong>Standard CV</strong>. Version control, rollback, staged promotion.</div></div>
+  </div>
+`;} },
+
+// ===== SUMMARY =====
+{ sec:'summary', render(){return `
+  <h2 style="margin-bottom:20px">Key takeaways</h2>
+  <div style="display:flex;flex-direction:column;gap:12px">
+    <div class="card" style="display:flex;align-items:flex-start;gap:14px;padding:18px">
+      <div style="width:36px;height:36px;border-radius:50%;background:var(--red-bg);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">&#9889;</div>
+      <div style="font-size:15px;color:var(--g70);line-height:1.5"><strong>Rolling CVs eliminate the publish and promote cycle</strong> for dev and test, removing all manual overhead.</div>
+    </div>
+    <div class="card" style="display:flex;align-items:flex-start;gap:14px;padding:18px">
+      <div style="width:36px;height:36px;border-radius:50%;background:var(--red-bg);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">&#128260;</div>
+      <div style="font-size:15px;color:var(--g70);line-height:1.5"><strong>Content updates are available immediately</strong> upon repository sync. No waiting, no intervention.</div>
+    </div>
+    <div class="card" style="display:flex;align-items:flex-start;gap:14px;padding:18px">
+      <div style="width:36px;height:36px;border-radius:50%;background:var(--red-bg);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">&#128736;</div>
+      <div style="font-size:15px;color:var(--g70);line-height:1.5"><strong>Hybrid approach:</strong> Rolling CVs for dev and test, Standard CVs for production. Use the right tool for each environment.</div>
+    </div>
+    <div class="card" style="display:flex;align-items:flex-start;gap:14px;padding:18px">
+      <div style="width:36px;height:36px;border-radius:50%;background:var(--red-bg);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">&#127942;</div>
+      <div style="font-size:15px;color:var(--g70);line-height:1.5"><strong>Available in Red Hat Satellite 6.18+</strong>. Supported via Web UI, Hammer CLI, API, and Ansible.</div>
+    </div>
+  </div>
+  <div class="metrics">
+    <div class="card metric"><div class="metric__v">30-60 min</div><div class="metric__l">Saved per content update</div></div>
+    <div class="card metric"><div class="metric__v" style="color:var(--green)">Days &#8594; Minutes</div><div class="metric__l">Patch availability (dev/test)</div></div>
+    <div class="card metric"><div class="metric__v" style="color:var(--blue)">4 of 6</div><div class="metric__l">Workflow steps eliminated</div></div>
+  </div>
+`;} },
+
+{ sec:'summary', render(){return `
+  <h2 style="margin-bottom:16px">Get started</h2>
+  <div class="card card--red">
+    <div class="card__t">Next steps</div>
+    <div class="card__b">
+      <div class="nlist">
+        <div class="nlist__i"><div><strong>Upgrade to Satellite 6.18 or later</strong><br><span style="color:var(--g50)">Rolling Content Views require Satellite 6.18+</span></div></div>
+        <div class="nlist__i"><div><strong>Identify dev and test Content Views</strong><br><span style="color:var(--g50)">Which environments simply need the latest content?</span></div></div>
+        <div class="nlist__i"><div><strong>Create Rolling Content Views</strong><br><span style="color:var(--g50)">Replace standard CVs for non-production environments</span></div></div>
+        <div class="nlist__i"><div><strong>Keep Standard CVs for production</strong><br><span style="color:var(--g50)">Maintain version control and staged rollouts</span></div></div>
+      </div>
+    </div>
+  </div>
+  <h3 style="margin:24px 0 12px">Learn more</h3>
+  <ul style="list-style:none">
+    <li style="padding:10px 0;border-bottom:1px solid var(--g20);display:flex;align-items:center;gap:10px;font-size:14px"><span style="font-size:18px">&#128214;</span> Red Hat Satellite documentation</li>
+    <li style="padding:10px 0;border-bottom:1px solid var(--g20);display:flex;align-items:center;gap:10px;font-size:14px"><span style="font-size:18px">&#128196;</span> Managing Content Views guide</li>
+    <li style="padding:10px 0;border-bottom:1px solid var(--g20);display:flex;align-items:center;gap:10px;font-size:14px"><span style="font-size:18px">&#128240;</span> Satellite 6.18 release notes</li>
+    <li style="padding:10px 0;border-bottom:1px solid var(--g20);display:flex;align-items:center;gap:10px;font-size:14px"><span style="font-size:18px">&#127891;</span> RH403 - Red Hat Satellite Administration</li>
+  </ul>
+  <div style="text-align:center;padding:40px 0 20px">
+    <div style="display:inline-block;background:var(--red);color:var(--white);padding:12px 28px;border-radius:6px;font-family:var(--fd);font-weight:700;font-size:16px">Red Hat Satellite</div>
+    <p style="margin-top:12px;color:var(--g40);font-size:14px">Thank you</p>
+  </div>
+`;} },
+];
+
+/* ============================================================
+   CONTROLLER
+   ============================================================ */
+const D={
+  s:0,
+  init(){
+    document.getElementById('tabs').innerHTML=SEC.map(s=>
+      `<button class="nav__tab" data-id="${s.id}" onclick="D.go(${s.s})">${s.label}</button>`
+    ).join('');
+    document.getElementById('next').onclick=()=>this.next();
+    document.getElementById('prev').onclick=()=>this.prev();
+    document.addEventListener('keydown',e=>{
+      if(e.target.tagName==='INPUT')return;
+      if(e.key==='ArrowRight'||e.key===' '){e.preventDefault();this.next()}
+      if(e.key==='ArrowLeft'){e.preventDefault();this.prev()}
+      if(e.key==='Home'){e.preventDefault();this.go(0)}
+      if(e.key==='End'){e.preventDefault();this.go(STEPS.length-1)}
+      if(e.key>='1'&&e.key<='5'){const i=+e.key-1;if(SEC[i])this.go(SEC[i].s)}
+    });
+    window.addEventListener('hashchange',()=>{const m=location.hash.match(/^#step-(\d+)$/);if(m)this.go(+m[1])});
+    const h=location.hash.match(/^#step-(\d+)$/);
+    this.go(h?Math.min(+h[1],STEPS.length-1):0);
+  },
+  go(i){
+    if(i<0||i>=STEPS.length)return;
+    this.s=i;
+    const step=STEPS[i];
+    document.getElementById('slide').innerHTML=`<div class="slide-wrap" style="animation:fadeUp .35s ease">${step.render()}</div>`;
+    document.getElementById('prev').disabled=i===0;
+    document.getElementById('next').disabled=i===STEPS.length-1;
+    document.getElementById('step-txt').textContent=`${i+1} / ${STEPS.length}`;
+    document.getElementById('bar').style.width=`${(i+1)/STEPS.length*100}%`;
+    const sec=SEC.find(s=>s.id===step.sec);
+    document.getElementById('nav-sec').textContent=sec?sec.label:'';
+    document.querySelectorAll('.nav__tab').forEach(t=>t.classList.toggle('on',t.dataset.id===step.sec));
+    history.replaceState(null,'',`#step-${i}`);
+    document.getElementById('main').scrollTop=0;
+  },
+  next(){this.go(this.s+1)},
+  prev(){this.go(this.s-1)},
+};
+document.addEventListener('DOMContentLoaded',()=>D.init());
+</script>
+</body>
+</html>
